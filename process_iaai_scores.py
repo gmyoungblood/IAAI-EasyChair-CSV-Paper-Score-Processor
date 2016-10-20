@@ -13,6 +13,7 @@
 #	10-19-2016: (GMY) Original Version
 #	10-20-2016: (GMY) Added output column in spreadsheet for number of reviews. 
 #                     Added issues information to output.
+#	10-20-2016: (GMY) Added paper classification and the req that Challenge Papers be defined
 #-----------------------------------------------------------------------------------------
 # LICENSE: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) 
 #
@@ -46,6 +47,7 @@ review_file =  'review.csv'
 score_file  =  'review_score.csv'
 output_file =  'iaai_scoring_output.csv'
 REVIEW_MIN = 3
+challenge_papers = [9, 25, 37, 49, 55]
 
 # This is just a linear script execution in Python, so processing starts here 
 # (no main, no functions, no objects, no mess, no fuss, get over yourself)
@@ -127,6 +129,8 @@ with open(output_file, 'wb') as outfile:
 	missing_review_count = 0
 	missing_review_papers = []
 	missing_score_papers = []
+	emerging_papers = []
+	deployed_papers = []
 
 	for item in sorted(paper_dict.values()):
 		# Get paper in focus
@@ -325,12 +329,17 @@ with open(output_file, 'wb') as outfile:
 				missing_score_papers.append(paper)
 			
 			# Calculate Overall
-			if eval > 0.0:
+			if paper in challenge_papers:
+				# Challenge
+				overall = (sig + tech + inno + content + tqual + clarity) / 6.0
+			elif eval > 0.0 and maint == 0.0:
 				# Emerging
 				overall = (sig + tech + inno + content + tqual + clarity + eval) / 7.0
+				emerging_papers.append(paper)
 			else:
 				# Deployed
 				overall = (sig + tech + inno + content + tqual + clarity + task + appd + uses + payoff + deploy + maint) / 12.0
+				deployed_papers.append(paper)
 			
 			out_list = [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			out_list[0] = paper
@@ -354,11 +363,17 @@ with open(output_file, 'wb') as outfile:
 			outwriter.writerow(out_list)
 		
 unique_papers = len(history)
+print '----------------------------------------'
 print ' There are ' + str(unique_papers) + ' unique papers.'
 print ' There are ' + str(missing_review_count) + ' missing reviews.'
 print ' There is an average of ' + str(float(item_count)/float(unique_papers))+ ' reviews per paper.'
 print ' Issues:'
 print '   Papers with missing reviews: ' + str(sorted(missing_review_papers))
 print '   Papers with missing scores (Challenge Papers?): ' + str(sorted(missing_score_papers))
+print ' Papers:'
+print '   Challenge Papers: ' + str(challenge_papers)
+print '   Deployed Papers: ' + str(sorted(deployed_papers))
+print '   Emerging papers: ' + str(sorted(emerging_papers))
+print '----------------------------------------'
 print ' Processing complete.\n'
 # fin.
