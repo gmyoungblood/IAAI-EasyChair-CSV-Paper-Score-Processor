@@ -10,7 +10,9 @@
 # while sitting in a meeting that I probably should have been paying attention to. 
 #-----------------------------------------------------------------------------------------
 # HISTORY:
-#	10-19-2016: GMY: Original Version
+#	10-19-2016: (GMY) Original Version
+#	10-20-2016: (GMY) Added output column in spreadsheet for number of reviews. 
+#                     Added issues information to output.
 #-----------------------------------------------------------------------------------------
 # LICENSE: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) 
 #
@@ -118,11 +120,13 @@ with open(output_file, 'wb') as outfile:
 			'Task or Problem Description*', 'Application Description*', 
 			'Uses of AI Technology*', 'Application Use and Payoff*', 
 			'Application Development and Deployment*', 'Maintenance*',
-			'Overall Average', 'Recommendation', 'AI Magazine Nomination'])
+			'Overall Average', 'Recommendation', 'AI Magazine Nomination', 'Number of Reviews'])
 			
 	# For each paper, find all of the reviews, add them to a local dictionary
 	history = []
 	missing_review_count = 0
+	missing_review_papers = []
+	missing_score_papers = []
 
 	for item in sorted(paper_dict.values()):
 		# Get paper in focus
@@ -143,6 +147,10 @@ with open(output_file, 'wb') as outfile:
 					dict_list.append(each_item)
 			print ' For paper  ' + str(paper) + '  found  ' + str(review_count) + '  reviews' + ('.' if (review_count >= REVIEW_MIN) else ', which is below the minimum.')
 			missing_review_count += REVIEW_MIN - review_count
+			
+			# Track missing review papers
+			if (review_count < REVIEW_MIN):
+				missing_review_papers.append(paper)
 			#print dict_list
 			
 			# Process the local dictionary list and prepare output
@@ -170,7 +178,9 @@ with open(output_file, 'wb') as outfile:
 			# Setup output file
 			#    This could be made a lot more generic by using an array, etc., but this
 			#  afforded me a completely transparent way to work with these variables and test
-
+			
+			score_missing = False
+			
 			# Process scores and ouput
 			for scores in dict_list:
 				try:
@@ -178,36 +188,42 @@ with open(output_file, 'wb') as outfile:
 				except KeyError:
 					sig += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Significance score !!!'
+					score_missing = True
 				
 				try:
 					tech += scores[2]
 				except KeyError:
 					tech += 0.0
 					print '!!! Paper ' + str(paper) + ' missing AI Technology score !!!'
+					score_missing = True
 				
 				try:
 					inno += scores[3]
 				except KeyError:
 					inno += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Innovation score !!!'
+					score_missing = True
 				
 				try:
 					content += scores[4]
 				except KeyError:
 					content += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Content score !!!'
+					score_missing = True
 					
 				try:
 					tqual += scores[5]
 				except KeyError:
 					tqual += 0.0	
 					print '!!! Paper ' + str(paper) + ' missing Technical Quality score !!!'
+					score_missing = True
 					
 				try:
 					clarity += scores[6]
 				except KeyError:
 					clarity += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Clarity score !!!'
+					score_missing = True
 				
 				try:
 					eval += scores[7]
@@ -249,11 +265,13 @@ with open(output_file, 'wb') as outfile:
 				except KeyError:
 					recommendation += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Recommendation !!!'
+					score_missing = True
 				try:
 					mag += scores[16]
 				except KeyError:
 					mag += 0.0
 					print '!!! Paper ' + str(paper) + ' missing AI Magazine recommendation !!!'
+					score_missing = True
 					
 				instances += 1
 				
@@ -262,22 +280,29 @@ with open(output_file, 'wb') as outfile:
 				if (task == 0.0 and appd == 0.0 and uses == 0.0 and payoff == 0.0 and deploy == 0.0 and maint == 0.0):
 					if (eval == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Eval score for Emerging Paper !!!'
+						score_missing = True
 				# Deployed Paper Idiot Checks
 				else:
 					if (eval > 0.0):
 						print '!!! Paper ' + str(paper) + ' has Eval score for a Deployed Paper !!!'
 					if (task == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Task score for Deployed Paper !!!'
+						score_missing = True
 					if (appd == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing App Description score for Deployed Paper !!!'
+						score_missing = True
 					if (uses == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Uses score for Deployed Paper !!!'
+						score_missing = True
 					if (payoff == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Payoff score for Deployed Paper !!!'
+						score_missing = True
 					if (deploy == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Deployment score for Deployed Paper !!!'
+						score_missing = True
 					if (maint == 0.0):
 						print '!!! Paper ' + str(paper) + ' missing Maintenance score for Deployed Paper !!!'
+						score_missing = True
 					
 				
 			sig /= instances
@@ -296,6 +321,9 @@ with open(output_file, 'wb') as outfile:
 			recommendation /= instances
 			mag /= instances
 			
+			if score_missing:
+				missing_score_papers.append(paper)
+			
 			# Calculate Overall
 			if eval > 0.0:
 				# Emerging
@@ -304,7 +332,7 @@ with open(output_file, 'wb') as outfile:
 				# Deployed
 				overall = (sig + tech + inno + content + tqual + clarity + task + appd + uses + payoff + deploy + maint) / 12.0
 			
-			out_list = [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			out_list = [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			out_list[0] = paper
 			out_list[1] = sig
 			out_list[2] = tech
@@ -322,12 +350,15 @@ with open(output_file, 'wb') as outfile:
 			out_list[14] = overall
 			out_list[15] = recommendation
 			out_list[16] = mag
+			out_list[17] = instances
 			outwriter.writerow(out_list)
 		
 unique_papers = len(history)
 print ' There are ' + str(unique_papers) + ' unique papers.'
 print ' There are ' + str(missing_review_count) + ' missing reviews.'
 print ' There is an average of ' + str(float(item_count)/float(unique_papers))+ ' reviews per paper.'
-
+print ' Issues:'
+print '   Papers with missing reviews: ' + str(sorted(missing_review_papers))
+print '   Papers with missing scores (Challenge Papers?): ' + str(sorted(missing_score_papers))
 print ' Processing complete.\n'
 # fin.
