@@ -47,7 +47,7 @@ review_file =  'review.csv'
 score_file  =  'review_score.csv'
 output_file =  'iaai_scoring_output.csv'
 REVIEW_MIN = 3
-challenge_papers = [9, 25, 37, 49, 55]
+challenge_papers = [52, 63, 75, 84]
 
 # This is just a linear script execution in Python, so processing starts here 
 # (no main, no functions, no objects, no mess, no fuss, get over yourself)
@@ -68,9 +68,9 @@ with open(review_file, 'rb') as review:
 	review_reader = csv.reader(review, delimiter=',', quotechar='|')
 	row_count = 0
 	for row in review_reader:
-		if row_count > 0 and len(row) > 1 and row[0].isdigit():
+		if len(row) > 1 and row[0].isdigit():
 			paper_dict[row[0]] = {'paper' : int(row[1])}
-			#print 'Storing ' + str(row[0]) + ' : ' + str(row[1])
+			# print 'Storing ' + str(row[0]) + ' : ' + str(row[1])
 		row_count += 1
 		
 # Debug to find specific number of reviews for a paper
@@ -87,30 +87,37 @@ with open(score_file, 'rb') as review_score:
 	row_count = 0
 	for row in review_score_reader:
 		if row_count > 0 and row[2] != '' and row[0].isdigit():
-			#print ', '.join(row)
-			#print paper_dict[str(row[0])]
-			list = paper_dict[str(row[0])]
-			if int(row[1]) != 16:
-				list.update({int(row[1]) : int(row[2])}) 
+			# print ', '.join(row)
+			try:
+				# print paper_dict[str(row[0])]
+				list = paper_dict[row[0]]
+			except KeyError:
+				# print "Missing associated review for %d" % int(row[0])
+				# This appears to be an EasyChair problem, which is likely due to deleted and replaced reviews
+				continue
+			if int(row[1]) != 17:
+				list.update({int(row[1]) : int(row[2])})
 			else:
 				if row[2] == 'yes':
-					list.update({int(row[1]) : 1}) 
+					list.update({int(row[1]) : 1})
 				else:
-					list.update({int(row[1]) : 0}) 
+					list.update({int(row[1]) : 0})
 		row_count += 1
+
 
 # Debug: Intermediate check
 #
-#print paper_dict
+# print paper_dict
 #
 ## or this for the specific papers
 #
 new_list = sorted(paper_dict.values())
 item_count = 0
 for i in new_list:
-#	print i['paper']
+	# print i['paper']
 	item_count += 1
 print ' There are ' + str(item_count) + ' paper reviews.' 
+
 
 # Main score processor --
 #
@@ -118,7 +125,7 @@ print ' There are ' + str(item_count) + ' paper reviews.'
 with open(output_file, 'wb') as outfile:
 	outwriter = csv.writer(outfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 	outwriter.writerow(['Paper', 'Significance', 'AI Technology', 'Innovation', 
-			'Content', 'Technical Quality', 'Clarity', 'Evaluation (Emerging Only)', 
+			'Content', 'Technical Quality', 'Clarity', 'Integrated Systems', 'Evaluation (Emerging Only)',
 			'Task or Problem Description*', 'Application Description*', 
 			'Uses of AI Technology*', 'Application Use and Payoff*', 
 			'Application Development and Deployment*', 'Maintenance*',
@@ -164,16 +171,17 @@ with open(output_file, 'wb') as outfile:
 			# 4 = Content
 			# 5 = Technical Quality
 			# 6 = Clarity
-			# 7 = Evaluation (Emerging Only)
-			# 8 = Task or Problem Description
-			# 9 = Application Description
-			# 10 = Uses of AI Technology
-			# 11 = Application Use and Payoff
-			# 12 = Application Development and Deployment
-			# 13 = Maintenance
+			# 7 = Integrated Systems
+			# 8 = Evaluation (Emerging Only)
+			# 9 = Task or Problem Description
+			# 10 = Application Description
+			# 11 = Uses of AI Technology
+			# 12 = Application Use and Payoff
+			# 13 = Application Development and Deployment
+			# 14 = Maintenance
 			# Overall Average (calculated)
-			# 15 = Recommendation
-			# 16 = AI Magazine Nomination
+			# 16 = Recommendation
+			# 17 = AI Magazine Nomination
 			instances = 0
 			sig = tech = inno = content = tqual = clarity = eval = 0.0
 			task = appd = uses = payoff = deploy = maint = 0.0
@@ -230,48 +238,48 @@ with open(output_file, 'wb') as outfile:
 					score_missing = True
 				
 				try:
-					eval += scores[7]
+					eval += scores[8]
 				except KeyError:
 					eval += 0.0
 					
 				try:
-					task += scores[8]
+					task += scores[9]
 				except KeyError:
 					task += 0.0
 					
 				try:
-					appd += scores[9]
+					appd += scores[10]
 				except KeyError:
 					appd += 0.0
 					
 				try:
-					uses += scores[10]
+					uses += scores[11]
 				except KeyError:
 					uses += 0.0
 					
 				try:
-					payoff += scores[11]
+					payoff += scores[12]
 				except KeyError:
 					payoff += 0.0
 					
 				try:
-					deploy += scores[12]
+					deploy += scores[13]
 				except KeyError:
 					deploy += 0.0
 					
 				try:
-					maint += scores[13]
+					maint += scores[14]
 				except KeyError:
 					maint += 0.0
 					
 				try:
-					recommendation  += scores[15]
+					recommendation  += scores[16]
 				except KeyError:
 					recommendation += 0.0
 					print '!!! Paper ' + str(paper) + ' missing Recommendation !!!'
 					score_missing = True
 				try:
-					mag += scores[16]
+					mag += scores[17]
 				except KeyError:
 					mag += 0.0
 					print '!!! Paper ' + str(paper) + ' missing AI Magazine recommendation !!!'
